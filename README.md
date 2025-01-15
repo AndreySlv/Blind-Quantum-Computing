@@ -1,6 +1,6 @@
 # Quantumnet - Blind Quantum Computation
 
-Este projeto simula uma rede quântica para transmissão de informações entre um remetente e um destinatário. A rede é projetada com diferentes topologias, abrangendo todas as camadas necessárias para um funcionamento eficiente. O repositório contém os códigos em Python para execução da simulação.
+Este projeto simula uma rede quântica para transmissão de informações entre um remetente e um destinatário de forma eficiente utilizando a Computação Quântica Cega. A rede é projetada com diferentes topologias, abrangendo todas as camadas necessárias para um funcionamento eficiente. O repositório contém os códigos em Python para execução da simulação.
 
 ## Descrição
 
