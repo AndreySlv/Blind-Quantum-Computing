@@ -1,35 +1,6 @@
 # Computação Quântica Cega em Redes de Entrelaçamento:Gerenciando e Alocando Recursos
 
 Este projeto simula uma rede quântica para transmissão de informações entre um remetente e um destinatário de forma eficiente utilizando a Computação Quântica Cega. A rede é projetada com diferentes topologias, abrangendo todas as camadas necessárias para um funcionamento eficiente. O repositório contém os códigos em Python para execução da simulação.
-
-## Ambiente de testes
-A ferramenta foi executada e testada na prática nos seguintes ambientes:
-1. Windows 11 <br>
-   Kernel = 10.0.22621.3085 <br>
-   Python = Python 3.12.0 <br>
-   Módulos Python conforme [requirements.txt](https://github.com/artuenric/qkd-net/blob/0c46fd9d58ff9919eba7d821b81097dcb801f3dc/requirements.txt) <br>
-
-3. Ubuntu 24.04.1 LTS <br>
-   Kernel Version: 6.8.0-51-generic <br>
-   Python = 3.12.3 <br>
-   Módulos Python conforme [requirements.txt](https://github.com/quantumgercom/QuatumNet/blob/main/requirements.txt) <br>
-## Instruções de instalação
-1. Clonar o repositório
-
-   ````
-   $ git clone https://github.com/quantumgercom/QuatumNet.git
-   ````
-3. Instalar as dependências
-   
-   As principais ferramentas utilizadas são:
-``Matplotlib``, ``Networkx``, além do ``Jupyter Notebook``. Para obtê-las, utiliza-se o ``pip``. Isso pode ser feito individualmente, ou por meio do arquivo ``requiriments.txt`` deste repositório com o seguinte comando no terminal:
-   ````
-   $ pip install -r requirements.txt
-   ````
-   Este documento contém todas as dependências utilizadas pelo ambiente virtual onde o código foi desenvolvimento.
-5. Pronto
-
-   Após clonar o repositório e instalar as dependências, os notebooks e o restante dos códigos já podem ser executados e manipualdos.
    
 ## Descrição
 
@@ -161,6 +132,39 @@ O controlador é o responsável por gerenciar a alocação, execução e monitor
   - Sucessos, falhas e detalhes das rotas utilizadas.
 - Exibe métricas úteis para avaliar a eficiência do agendamento e a qualidade da rede.
 
+## Demonstração
+Em [``Simulação 1``](https://github.com/quantumgercom/Blind-Quantum-Computing/blob/main/SIMULAÇAO%201.ipynb) e [``Simulação 2``](https://github.com/quantumgercom/Blind-Quantum-Computing/blob/main/SIMULAÇÃO%202.ipynb)é possível conferir a base para criação das simulações. Este Notebook contém um exemplo de simulação explicado passo a passo.
+
+## Ambiente de testes
+A ferramenta foi executada e testada na prática nos seguintes ambientes:
+1. Windows 11 <br>
+   Kernel = 10.0.22621.3085 <br>
+   Python = Python 3.12.0 <br>
+   Módulos Python conforme [requirements.txt](https://github.com/artuenric/qkd-net/blob/0c46fd9d58ff9919eba7d821b81097dcb801f3dc/requirements.txt) <br>
+
+3. Ubuntu 24.04.1 LTS <br>
+   Kernel Version: 6.8.0-51-generic <br>
+   Python = 3.12.3 <br>
+   Módulos Python conforme [requirements.txt](https://github.com/quantumgercom/QuatumNet/blob/main/requirements.txt) <br>
+   
+## Instruções de instalação
+1. Clonar o repositório
+
+   ````
+   $ git clone https://github.com/quantumgercom/QuatumNet.git
+   ````
+3. Instalar as dependências
+   
+   As principais ferramentas utilizadas são:
+``Matplotlib``, ``Networkx``, além do ``Jupyter Notebook``. Para obtê-las, utiliza-se o ``pip``. Isso pode ser feito individualmente, ou por meio do arquivo ``requiriments.txt`` deste repositório com o seguinte comando no terminal:
+   ````
+   $ pip install -r requirements.txt
+   ````
+   Este documento contém todas as dependências utilizadas pelo ambiente virtual onde o código foi desenvolvimento.
+5. Pronto
+
+   Após clonar o repositório e instalar as dependências, os notebooks e o restante dos códigos já podem ser executados e manipualdos.
+   
 ---
 
 Este projeto foi elaborado como parte de um artigo em processo de revisão para o SBRC 2025, com o objetivo de contribuir para o avanço das técnicas de simulação e gerenciamento de redes quânticas de alta eficiência e confiabilidade. 
