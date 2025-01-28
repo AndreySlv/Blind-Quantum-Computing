@@ -1,4 +1,4 @@
-# Computação Quântica Cega em Redes de Entrelaçamento:Gerenciando e Alocando Recursos
+# Computação Quântica Cega em Redes de Entrelaçamento: Gerenciando e Alocando Recursos
 
 Este projeto simula uma rede quântica para transmissão de informações entre um remetente e um destinatário de forma eficiente utilizando a Computação Quântica Cega. A rede é projetada com diferentes topologias, abrangendo todas as camadas necessárias para um funcionamento eficiente. O repositório contém os códigos em Python para execução da simulação.
    
@@ -133,7 +133,7 @@ O controlador é o responsável por gerenciar a alocação, execução e monitor
 - Exibe métricas úteis para avaliar a eficiência do agendamento e a qualidade da rede.
 
 ## Demonstração
-Em [``Simulação 1``](https://github.com/quantumgercom/Blind-Quantum-Computing/blob/main/SIMULAÇAO%201.ipynb) e [``Simulação 2``](https://github.com/quantumgercom/Blind-Quantum-Computing/blob/main/SIMULAÇÃO%202.ipynb)é possível conferir a base para criação das simulações. Este Notebook contém um exemplo de simulação explicado passo a passo.
+Em [``Simulação BQC``](https://github.com/quantumgercom/Blind-Quantum-Computing/blob/main/Guia%20-%20BQC.ipynb)é possível conferir a base para criação das simulações. Este Notebook contém um exemplo de simulação explicado passo a passo.
 
 ## Ambiente de testes
 A ferramenta foi executada e testada na prática nos seguintes ambientes:
