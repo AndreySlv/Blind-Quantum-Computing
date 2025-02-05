@@ -145,9 +145,8 @@ A ferramenta foi executada e testada na prática nos seguintes ambientes:
    
 ## Instruções de instalação
 1. Clonar o repositório
-
    ````
-   $ git clone https://github.com/quantumgercom/QuatumNet.git
+   $ git clone https://github.com/quantumgercom/Blind-Quantum-Computing.git
    ````
 3. Instalar as dependências
    
