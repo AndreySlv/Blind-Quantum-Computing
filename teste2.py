@@ -1,18 +1,18 @@
-# INSTALE AS DEPENDÊNCIAS
-# pip install qiskit qiskit-machine-learning scikit-learn torch matplotlib
+#INSTALE AS DEPENDÊNCIAS
+#pip install qiskit qiskit-machine-learning scikit-learn torch matplotlib
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
 from qiskit_machine_learning.neural_networks import EstimatorQNN
 from qiskit_machine_learning.connectors import TorchConnector
-
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.datasets import load_iris
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
 import torch
 import numpy as np
+import random
+import matplotlib.pyplot as plt
 
 iris = load_iris()
 X = iris.data
@@ -29,7 +29,7 @@ scaler = MinMaxScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-num_qubits = X_train.shape[1] 
+num_qubits = X_train.shape[1]
 
 feature_map = ZZFeatureMap(feature_dimension=num_qubits)
 ansatz = RealAmplitudes(num_qubits, reps=1)
@@ -38,12 +38,11 @@ qc = QuantumCircuit(num_qubits)
 qc.compose(feature_map, inplace=True)
 qc.compose(ansatz, inplace=True)
 
-qnn = EstimatorQNN(
-    circuit=qc,
-    input_params=feature_map.parameters,
-    weight_params=ansatz.parameters
-)
+print("Circuito usado no QML:")
 
+qnn = EstimatorQNN(
+    circuit=qc, input_params=feature_map.parameters, weight_params=ansatz.parameters
+)
 model = TorchConnector(qnn)
 
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
@@ -55,8 +54,8 @@ loss_func = torch.nn.BCELoss()
 for epoch in range(20):
     model.train()
     optimizer.zero_grad()
-    output = model(X_train_tensor)
-    loss = loss_func(torch.sigmoid(output.squeeze()), y_train_tensor)
+    outputs = model(X_train_tensor)
+    loss = loss_func(torch.sigmoid(outputs.squeeze()), y_train_tensor)
     loss.backward()
     optimizer.step()
 
@@ -69,33 +68,35 @@ precision = precision_score(y_test, y_pred)
 recall = recall_score(y_test, y_pred)
 f1 = f1_score(y_test, y_pred)
 
-print("Resultado QNN com Estimator:")
+print("\nDesempenho do Modelo QML:")
 print(f"Acurácia: {accuracy:.2f}")
 print(f"Precisão: {precision:.2f}")
 print(f"Recall: {recall:.2f}")
 print(f"F1: {f1:.2f}")
 
-
-
-import random
-import matplotlib.pyplot as plt
 from quantumnet.components import Network, Logger
 
-
 rede = Network()
-rede.set_ready_topology('grade', 8, 3, 3) 
+rede.set_ready_topology('grade', 8, 3, 3)
 
 Logger.activate(Logger)
 
-circuit_depth = qc.depth()
+quantum_circuit = qc
+num_qubits = quantum_circuit.num_qubits
+circuit_depth = quantum_circuit.depth()
 
-print(f"Circuito do QNN tem profundidade: {circuit_depth}")
+print(f"\nEnviando circuito para a rede:")
+print(f"Qubits: {num_qubits} | Profundidade: {circuit_depth}")
 
-rede.application_layer.run_app(
-    app_name="AC_BQC",
-    alice_id=6,         
-    bob_id=0,           
+# Executa o protocolo AC_BQC com o circuito do QML
+resultado = rede.application_layer.run_app(
+    "AC_BQC",
+    alice_id=6,
+    bob_id=0,
     num_qubits=num_qubits,
-    scenario=1,        
+    scenario=1,
     circuit_depth=circuit_depth
 )
+
+print("\nResultado da comunicação via rede:")
+print(resultado)
