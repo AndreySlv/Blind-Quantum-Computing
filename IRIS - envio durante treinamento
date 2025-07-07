@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 import collections
 from quantumnet.components import Network, Logger
 
+#def regenerar_eprs_para_rota(rede, num_eprs=num_qubits * 2 ):
+#    rede.start_eprs(num_eprs=num_eprs)
+
 iris = load_iris()
 X = iris.data
 y = iris.target
@@ -89,16 +92,20 @@ for epoch in range(5):
 
     quantum_circuit = final_circuit
     circuit_depth = quantum_circuit.depth()
+
+#    regenerar_eprs_para_rota(rede)
+
     rede.application_layer.run_app(
         "AC_BQC",
         alice_id=6,
         bob_id=0,
         num_qubits=num_qubits,
-        scenario=1,
+        scenario=2,
         circuit_depth=circuit_depth
         )
 
     print(f"Epoch {epoch+1}, Loss: {total_loss:.4f}")
+    
 
 with torch.no_grad():
     outputs = model(torch.tensor(X_test, dtype=torch.float32)).squeeze()
