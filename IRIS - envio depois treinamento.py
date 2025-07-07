@@ -22,8 +22,13 @@ X = X[y != 2]
 y = y[y != 2]
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y, test_size=0.2, random_state=42, stratify=y
 )
+
+import collections
+print("Distribuição das classes no y_train e y_test:")
+print("Treino:", collections.Counter(y_train))
+print("Teste:", collections.Counter(y_test))
 
 scaler = MinMaxScaler()
 X_train = scaler.fit_transform(X_train)
@@ -38,7 +43,7 @@ qc = QuantumCircuit(num_qubits)
 qc.compose(feature_map, inplace=True)
 qc.compose(ansatz, inplace=True)
 
-print("Circuito usado no QML:")
+print("Circuito usado no QML")
 
 qnn = EstimatorQNN(
     circuit=qc, input_params=feature_map.parameters, weight_params=ansatz.parameters
@@ -51,7 +56,7 @@ y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
 loss_func = torch.nn.BCELoss()
 
-for epoch in range(20):
+for epoch in range(25):
     model.train()
     optimizer.zero_grad()
     outputs = model(X_train_tensor)

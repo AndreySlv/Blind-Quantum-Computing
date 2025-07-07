@@ -1,0 +1,116 @@
+#INSTALAÇÃO DAS DEPENDÊNCIAS
+# pip install qiskit qiskit-machine-learning scikit-learn torch matplotlib
+
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
+from qiskit_machine_learning.neural_networks import EstimatorQNN
+from qiskit_machine_learning.connectors import TorchConnector
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.datasets import load_iris
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import torch
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+import collections
+from quantumnet.components import Network, Logger
+
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+# Remover a classe 2
+X = X[y != 2]
+y = y[y != 2]
+
+# Separar em treino e teste com estratificação
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+print("Distribuição das classes no y_train e y_test:")
+print("Treino:", collections.Counter(y_train))
+print("Teste:", collections.Counter(y_test))
+
+# Normalização
+scaler = MinMaxScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Inicialização da rede quântica antes do treinamento
+rede = Network()
+rede.set_ready_topology('grade', 8, 3, 3)
+Logger.activate(Logger)
+
+# Definição dos parâmetros quânticos
+num_qubits = X_train.shape[1]
+feature_map = ZZFeatureMap(feature_dimension=num_qubits)
+ansatz = RealAmplitudes(num_qubits, reps=1)
+
+# Inicializa o modelo
+qc_template = QuantumCircuit(num_qubits)
+qc_template.compose(feature_map, inplace=True)
+qc_template.compose(ansatz, inplace=True)
+
+qnn = EstimatorQNN(
+    circuit=qc_template,
+    input_params=feature_map.parameters,
+    weight_params=ansatz.parameters
+)
+model = TorchConnector(qnn)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+loss_func = torch.nn.BCELoss()
+
+# Conversão para tensores
+X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+
+for epoch in range(5):
+    model.train()
+    total_loss = 0.0
+
+    optimizer.zero_grad()
+
+    output = model(X_train_tensor)
+    prediction = torch.sigmoid(output.squeeze())
+    loss = loss_func(prediction, y_train_tensor)
+    loss.backward()
+    optimizer.step()
+
+    trained_weights = model.weight.detach().numpy()
+
+    final_circuit = QuantumCircuit(num_qubits)
+    final_circuit.compose(feature_map, inplace=True)
+    final_circuit.compose(ansatz.assign_parameters(trained_weights), inplace=True)
+
+    total_loss += loss.item()
+
+    quantum_circuit = final_circuit
+    circuit_depth = quantum_circuit.depth()
+    rede.application_layer.run_app(
+        "AC_BQC",
+        alice_id=6,
+        bob_id=0,
+        num_qubits=num_qubits,
+        scenario=1,
+        circuit_depth=circuit_depth
+        )
+
+    print(f"Epoch {epoch+1}, Loss: {total_loss:.4f}")
+
+with torch.no_grad():
+    outputs = model(torch.tensor(X_test, dtype=torch.float32)).squeeze()
+    y_pred = torch.sigmoid(outputs).round().numpy()
+
+accuracy = accuracy_score(y_test, y_pred)
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+f1 = f1_score(y_test, y_pred)
+
+print("\nDesempenho do Modelo QML:")
+print(f"Acurácia: {accuracy:.2f}")
+print(f"Precisão: {precision:.2f}")
+print(f"Recall: {recall:.2f}")
+print(f"F1: {f1:.2f}")
