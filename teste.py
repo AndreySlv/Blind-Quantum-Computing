@@ -1,6 +1,4 @@
-import os
+from qiskit_aer import AerSimulator
 
-path = "base_test_mnist_784_f90/qasm/"
-# Veja os arquivos reais na pasta
-print("Arquivos encontrados em", path)
-print(os.listdir(path))
+sim = AerSimulator()
+print("AerSimulator está funcionando!")
