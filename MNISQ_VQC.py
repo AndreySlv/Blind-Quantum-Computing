@@ -1,33 +1,33 @@
-# pip install qiskit qiskit-aer qiskit-machine-learning numpy matplotlib torch scikit-learn
+# pip install --upgrade qiskit qiskit-aer qiskit-machine-learning qiskit-algorithms scikit-learn matplotlib numpy
 
+import os
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 from qiskit import QuantumCircuit, transpile
-from qiskit_aer import AerSimulator
 from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-from qiskit_algorithms.gradients import ParamShiftEstimatorGradient
 from qiskit_machine_learning.neural_networks import EstimatorQNN
-from qiskit_machine_learning.connectors import TorchConnector
+from qiskit_machine_learning.algorithms.classifiers import NeuralNetworkClassifier
+from qiskit_machine_learning.utils.loss_functions import CrossEntropyLoss
+from qiskit_algorithms.optimizers import ADAM
 
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import os
+from qiskit_aer import AerSimulator
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from quantumnet.components import Network, Logger
 
-# Rede quântica
+# Inicializa rede quântica do seu ambiente
 rede = Network()
 rede.set_ready_topology('grade', 8, 3, 3)
 Logger.activate(Logger)
 
-# Envio de circuito por época
 def enviar_circuito_por_epoca(circuito, epoch, num_qubits, circuit_depth):
     print(f"[Epoch {epoch+1}] Enviando circuito para a rede...")
     try:
@@ -38,50 +38,18 @@ def enviar_circuito_por_epoca(circuito, epoch, num_qubits, circuit_depth):
             num_qubits=num_qubits,
             scenario=2,
             circuit_depth=circuit_depth,
-            circuit=circuito
+            circuito=circuito
         )
         print(f"[Epoch {epoch+1}] Envio concluído.")
     except Exception as e:
         print(f"[Epoch {epoch+1}] Erro ao enviar circuito: {str(e)}")
 
-# Caminho dos arquivos QASM
-path = "base_test_mnist_784_f90/qasm/"
+# --- Preparação dos dados ---
 
-def show_figure(pict, index=0):
-    try:
-        pict = np.asarray(pict, dtype=np.float64).ravel()
-        if pict.max() > 0:
-            pict = pict / pict.max()
-        size = len(pict)
-        dim = int(np.ceil(np.sqrt(size)))
-        padded = np.zeros((dim * dim,))
-        padded[:size] = pict
-        plt.imshow(padded.reshape(dim, dim), cmap="Greys")
-        plt.axis('off')
-        plt.savefig(f"figura_{index}.png", bbox_inches='tight', pad_inches=0)
-        plt.close()
-    except Exception as e:
-        print(f"Erro ao salvar figura {index}: {str(e)}")
-
-def show_state_figure(statevector, index=0):
-    try:
-        if hasattr(statevector, 'data'):
-            statevector = statevector.data
-        statevector = np.asarray(statevector, dtype=np.complex128)
-        probs = np.abs(statevector) ** 2
-        if len(probs) < 784:
-            padded = np.zeros(784)
-            padded[:len(probs)] = probs
-            probs = padded
-        show_figure(probs, index=index)
-    except Exception as e:
-        print(f"Erro ao processar estado {index}: {str(e)}")
-
-# Simulador
 simulator = AerSimulator(method='statevector')
+path = "base_test_mnist_784_f90/qasm/"
+file_list = sorted(os.listdir(path))[:20]  # 10 de cada classe, por exemplo
 
-# Leitura QASM
-file_list = sorted(os.listdir(path))[:20]
 states = []
 labels = []
 
@@ -96,96 +64,89 @@ for i, file_name in enumerate(file_list):
             job = simulator.run(compiled)
             result = job.result()
             state = result.data(0)['statevector']
-            show_state_figure(state, index=i)
-            features = np.abs(state)**2
-            features = features[:4]
+            features = np.abs(state) ** 2
+            features = features[:4]  # só 4 features para simplificar
             states.append(features)
-            labels.append(0 if i < 10 else 1)
+            labels.append(0 if i < 10 else 1)  # classe 0 para primeiros 10, classe 1 para próximos 10
     except Exception as e:
         print(f"Erro ao processar {file_name}: {str(e)}")
 
-# Dados
-X = torch.tensor(states, dtype=torch.float32)
-y = torch.tensor(labels, dtype=torch.float32).unsqueeze(1)
-X_train_tensor = X
-y_train_tensor = y
+X = np.array(states)
+y = np.array(labels)
 
-# Circuito base
+# Normalização dos dados
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Dividir treino/teste
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# --- Definindo o circuito quântico ---
+
 num_qubits = 4
 feature_map = ZZFeatureMap(num_qubits)
 ansatz = RealAmplitudes(num_qubits, reps=1)
 
-observable = SparsePauliOp("Z" * num_qubits)
-estimator = Estimator()
-gradient = ParamShiftEstimatorGradient(estimator)
+qc = QuantumCircuit(num_qubits)
+qc.compose(feature_map, inplace=True)
+qc.compose(ansatz, inplace=True)
 
-qc_base = QuantumCircuit(num_qubits)
-qc_base.compose(feature_map, inplace=True)
-qc_base.compose(ansatz, inplace=True)
+estimator = Estimator()
 
 qnn = EstimatorQNN(
-    circuit=qc_base,
+    circuit=qc,
     input_params=feature_map.parameters,
     weight_params=ansatz.parameters,
-    observables=observable,
     estimator=estimator,
-    gradient=gradient,
     input_gradients=True
 )
 
-model = TorchConnector(qnn)
-loss_func = nn.BCELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
+# --- Modelo VQC ---
 
-# Treinamento
-print("\nINICIANDO TREINAMENTO VQC...")
-for epoch in range(25):
-    model.train()
-    optimizer.zero_grad()
-    output = model(X_train_tensor)
-    loss = loss_func(torch.sigmoid(output.squeeze()), y_train_tensor.squeeze())
-    loss.backward()
-    optimizer.step()
-
-    # Gera circuito com pesos treinados
-    trained_weights = model.weight.detach().numpy()
-    final_circuit = QuantumCircuit(num_qubits)
-    final_circuit.compose(feature_map, inplace=True)
-    final_circuit.compose(ansatz.assign_parameters(trained_weights), inplace=True)
-
-    # Envio para rede
-    enviar_circuito_por_epoca(
-        circuito=final_circuit,
-        epoch=epoch,
-        num_qubits=final_circuit.num_qubits,
-        circuit_depth=final_circuit.depth()
+vqc = NeuralNetworkClassifier(
+    neural_network=qnn,
+    loss=CrossEntropyLoss(),
+    optimizer=ADAM(maxiter=25),
+    callback=lambda weights, loss, step: enviar_circuito_por_epoca(
+        circuito=feature_map.compose(ansatz.assign_parameters(weights)),
+        epoch=step,
+        num_qubits=num_qubits,
+        circuit_depth=feature_map.compose(ansatz).depth()
     )
+)
 
-    if (epoch + 1) % 5 == 0:
-        print(f"Epoch {epoch+1}: Loss = {loss.item():.4f}")
+print("\nTREINANDO VQC...")
+vqc.fit(X_train, y_train)
 
-# Avaliação
+# --- Avaliação ---
+
 print("\nCALCULANDO MÉTRICAS...")
-with torch.no_grad():
-    preds = model(X)
-    y_pred = torch.sigmoid(preds).squeeze().round().detach().numpy()
-    y_true = y.squeeze().numpy()
 
-    y_pred = y_pred.astype(int)
-    y_true = y_true.astype(int)
+y_pred = vqc.predict(X_test)
 
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred)
-    recall = recall_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred)
+print("Classes verdadeiras únicas:", np.unique(y_test))
+print("Classes previstas únicas:", np.unique(y_pred))
 
-    print("\nMÉTRICAS FINAIS:")
-    print(f"Acurácia : {accuracy:.4f}")
-    print(f"Precisão : {precision:.4f}")
-    print(f"Recall   : {recall:.4f}")
-    print(f"F1 Score : {f1:.4f}")
+# Garantir inteiros (0 ou 1)
+y_test = y_test.astype(int)
+y_pred = y_pred.astype(int)
 
-    print("\nResultados Detalhados:")
-    print("Entradas:", X.numpy())
-    print("Saídas Previstas:", y_pred)
-    print("Saídas Reais:    ", y_true)
+accuracy = accuracy_score(y_test, y_pred)
+
+# Usar 'weighted' para métricas, para evitar erros com multiclass
+precision = precision_score(y_test, y_pred, average='weighted')
+recall = recall_score(y_test, y_pred, average='weighted')
+f1 = f1_score(y_test, y_pred, average='weighted')
+
+print("\nMÉTRICAS FINAIS:")
+print(f"Acurácia : {accuracy:.4f}")
+print(f"Precisão : {precision:.4f}")
+print(f"Recall   : {recall:.4f}")
+print(f"F1 Score : {f1:.4f}")
+
+print("\nResultados Detalhados:")
+print("Entradas:", X_test)
+print("Saídas Previstas:", y_pred)
+print("Saídas Reais:    ", y_test)
