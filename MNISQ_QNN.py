@@ -1,5 +1,17 @@
-##
+# INSTALE AS DEPEDÊNCIAS
 # pip install qiskit qiskit-aer qiskit-machine-learning numpy matplotlib torch scikit-learn
+
+import random
+import numpy as np
+import torch
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 import matplotlib
 matplotlib.use('Agg')
@@ -9,13 +21,10 @@ from qiskit_aer import AerSimulator
 from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.primitives import Estimator
-#from qiskit_algorithms.gradients import ParamShiftEstimatorGradient
 from qiskit_machine_learning.neural_networks import EstimatorQNN
 from qiskit_machine_learning.connectors import TorchConnector
 
-import numpy as np
 import matplotlib.pyplot as plt
-import torch
 import torch.nn as nn
 import torch.optim as optim
 import os
@@ -23,6 +32,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 from quantumnet.components import Network, Logger
 
+# Configuração determinística da rede (se aplicável)
 rede = Network()
 rede.set_ready_topology('grade', 8, 3, 3)
 Logger.activate(Logger)
@@ -77,7 +87,6 @@ def show_state_figure(statevector, index=0):
 
 simulator = AerSimulator(method='statevector')
 
-# Leitura QASM
 file_list = sorted(os.listdir(path))[:20]
 states = []
 labels = []
@@ -112,7 +121,6 @@ ansatz = RealAmplitudes(num_qubits, reps=1)
 
 observable = SparsePauliOp("Z" * num_qubits)
 estimator = Estimator()
-#gradient = ParamShiftEstimatorGradient(estimator)
 
 qc_base = QuantumCircuit(num_qubits)
 qc_base.compose(feature_map, inplace=True)
@@ -124,7 +132,6 @@ qnn = EstimatorQNN(
     weight_params=ansatz.parameters,
     observables=observable,
     estimator=estimator,
-#    gradient=gradient,
     input_gradients=True
 )
 
@@ -146,7 +153,6 @@ for epoch in range(25):
     final_circuit.compose(feature_map, inplace=True)
     final_circuit.compose(ansatz.assign_parameters(trained_weights), inplace=True)
 
-    # Envio para rede
     enviar_circuito_por_epoca(
         circuito=final_circuit,
         epoch=epoch,
