@@ -85,7 +85,20 @@ def show_state_figure(statevector, index=0):
     except Exception as e:
         print(f"Erro ao processar estado {index}: {str(e)}")
 
-simulator = AerSimulator(method='statevector')
+#simulator = AerSimulator(method='statevector')
+
+from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel, depolarizing_error
+
+noise_model = NoiseModel()
+
+error_1q = depolarizing_error(0.01, 1)
+error_2q = depolarizing_error(0.02, 2)
+
+noise_model.add_all_qubit_quantum_error(error_1q, ['h','x','y','rx','ry','rz'])
+noise_model.add_all_qubit_quantum_error(error_2q, ['cx'])
+
+simulator = AerSimulator(noise_model=noise_model, shots=1024)
 
 file_list = sorted(os.listdir(path))[:20]
 states = []
@@ -159,6 +172,7 @@ for epoch in range(25):
         num_qubits=final_circuit.num_qubits,
         circuit_depth=final_circuit.depth()
     )
+    rede.start_eprs(5)
 
     if (epoch + 1) % 5 == 0:
         print(f"Epoch {epoch+1}: Loss = {loss.item():.4f}")
