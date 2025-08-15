@@ -1,6 +1,5 @@
 # INSTALE AS DEPEDÊNCIAS
-#pip install --upgrade qiskit qiskit-aer qiskit-machine-learning qiskit-algorithms scikit-learn matplotlib numpy
-
+#pip install qiskit qiskit-aer qiskit-machine-learning qiskit-algorithms scikit-learn matplotlib numpy networkx
 import os
 import random
 import numpy as np
@@ -8,14 +7,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-SEED = 42
-os.environ['PYTHONHASHSEED'] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
-
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
 from qiskit.primitives import Estimator
+from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel, depolarizing_error
 from qiskit_machine_learning.neural_networks import EstimatorQNN
 from qiskit_machine_learning.algorithms.classifiers import NeuralNetworkClassifier
 from qiskit_machine_learning.utils.loss_functions import CrossEntropyLoss
@@ -27,6 +23,25 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from quantumnet.components import Network, Logger
+
+SEED = 42
+os.environ['PYTHONHASHSEED'] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+
+noise_model = NoiseModel()
+error_1q = depolarizing_error(0.01, 1)
+error_2q = depolarizing_error(0.02, 2)
+noise_model.add_all_qubit_quantum_error(error_1q, ['h','x','y','rx','ry','rz'])
+noise_model.add_all_qubit_quantum_error(error_2q, ['cx'])
+
+simulator = AerSimulator(noise_model=noise_model, shots=1024)
+
+estimator = Estimator(options={
+    "backend": simulator,
+    "resilience_level": 1, 
+    "approximation": True
+})
 
 rede = Network()
 rede.set_ready_topology('grade', 8, 3, 3)
@@ -69,8 +84,6 @@ ansatz = RealAmplitudes(num_qubits, reps=1)
 qc = QuantumCircuit(num_qubits)
 qc.compose(feature_map, inplace=True)
 qc.compose(ansatz, inplace=True)
-
-estimator = Estimator()
 
 qnn = EstimatorQNN(
     circuit=qc,

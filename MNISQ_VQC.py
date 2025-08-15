@@ -1,6 +1,5 @@
 # INSTALE AS DEPEDÊNCIAS
 # pip install --upgrade qiskit qiskit-aer qiskit-machine-learning qiskit-algorithms scikit-learn matplotlib numpy
-
 import os
 import random
 import numpy as np
@@ -17,6 +16,7 @@ from qiskit_machine_learning.utils.loss_functions import CrossEntropyLoss
 from qiskit_algorithms.optimizers import COBYLA
 
 from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel, depolarizing_error
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -32,10 +32,22 @@ try:
 except ImportError:
     print("Não foi possível configurar a semente global do Qiskit, continuando...")
 
+noise_model = NoiseModel()
+error_1q = depolarizing_error(0.01, 1)  # 1% de erro de depolarização para portas de 1 qubit
+error_2q = depolarizing_error(0.02, 2)  # 2% de erro de depolarização para portas de 2 qubits
+
+noise_model.add_all_qubit_quantum_error(error_1q, ['h', 'x', 'y', 'z', 'rx', 'ry', 'rz', 's', 'sdg', 't', 'tdg'])
+noise_model.add_all_qubit_quantum_error(error_2q, ['cx', 'cz', 'swap'])
+
+simulator = AerSimulator(
+    noise_model=noise_model,
+    shots=1024,
+    method='statevector'
+)
+
 def enviar_circuito_por_epoca(circuito, epoch, num_qubits, circuit_depth):
     print(f"[Epoch {epoch+1}] Circuito com {num_qubits} qubits e profundidade {circuit_depth}")
 
-simulator = AerSimulator(method='statevector')
 path = "base_test_mnist_784_f90/qasm/"
 file_list = sorted(os.listdir(path))[:20]  
 
@@ -82,7 +94,11 @@ qc = QuantumCircuit(num_qubits)
 qc.compose(feature_map, inplace=True)
 qc.compose(ansatz, inplace=True)
 
-estimator = Estimator()
+estimator = Estimator(options={
+    "backend": simulator,
+    "resilience_level": 1,  
+    "approximation": True  
+})
 
 qnn = EstimatorQNN(
     circuit=qc,
@@ -105,7 +121,8 @@ vqc = NeuralNetworkClassifier(
     )
 )
 
-print("\nTREINANDO VQC...")
+print("\nTREINANDO VQC COM BACKEND RUIDOSO...")
+print(f"Configuração de ruído: 1-qubit error={error_1q.probabilities}, 2-qubit error={error_2q.probabilities}")
 vqc.fit(X_train, y_train)
 
 print("\nCALCULANDO MÉTRICAS...")

@@ -3,6 +3,7 @@
 
 from qiskit import QuantumCircuit
 from qiskit.circuit.library import ZZFeatureMap, RealAmplitudes
+from qiskit.primitives import Estimator
 from qiskit_machine_learning.neural_networks import EstimatorQNN
 from qiskit_machine_learning.connectors import TorchConnector
 from sklearn.model_selection import train_test_split
@@ -16,8 +17,26 @@ import matplotlib.pyplot as plt
 import collections
 from quantumnet.components import Network, Logger
 
-#def regenerar_eprs_para_rota(rede, num_eprs=num_qubits * 2 ):
-#    rede.start_eprs(num_eprs=num_eprs)
+from qiskit_aer import AerSimulator
+from qiskit_aer.noise import NoiseModel, depolarizing_error
+
+noise_model = NoiseModel()
+error_1q = depolarizing_error(0.01, 1)  # 1% de erro para portas de 1 qubit
+error_2q = depolarizing_error(0.02, 2)  # 2% de erro para portas de 2 qubits
+
+noise_model.add_all_qubit_quantum_error(error_1q, ['h', 'x', 'y', 'z', 'rx', 'ry', 'rz'])
+noise_model.add_all_qubit_quantum_error(error_2q, ['cx'])
+
+simulator = AerSimulator(
+    noise_model=noise_model,
+    shots=1024
+)
+
+estimator = Estimator(options={
+    "backend": simulator,
+    "resilience_level": 1,
+    "approximation": True
+})
 
 iris = load_iris()
 X = iris.data
@@ -59,8 +78,10 @@ qc_template.compose(ansatz, inplace=True)
 qnn = EstimatorQNN(
     circuit=qc_template,
     input_params=feature_map.parameters,
-    weight_params=ansatz.parameters
+    weight_params=ansatz.parameters,
+    estimator=estimator  # Usando o estimator com ruído
 )
+
 model = TorchConnector(qnn)
 
 optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
@@ -69,6 +90,9 @@ loss_func = torch.nn.BCELoss()
 # Conversão para tensores
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+
+print("\nIniciando treinamento com backend ruidoso...")
+print(f"Configuração de ruído: 1-qubit error={error_1q.probabilities}, 2-qubit error={error_2q.probabilities}")
 
 for epoch in range(5):
     model.train()
@@ -93,8 +117,6 @@ for epoch in range(5):
     quantum_circuit = final_circuit
     circuit_depth = quantum_circuit.depth()
 
-#    regenerar_eprs_para_rota(rede)
-
     rede.application_layer.run_app(
         "AC_BQC",
         alice_id=6,
@@ -102,11 +124,10 @@ for epoch in range(5):
         num_qubits=num_qubits,
         scenario=2,
         circuit_depth=circuit_depth
-        )
+    )
 
     print(f"Epoch {epoch+1}, Loss: {total_loss:.4f}")
     
-
 with torch.no_grad():
     outputs = model(torch.tensor(X_test, dtype=torch.float32)).squeeze()
     y_pred = torch.sigmoid(outputs).round().numpy()
@@ -116,7 +137,7 @@ precision = precision_score(y_test, y_pred)
 recall = recall_score(y_test, y_pred)
 f1 = f1_score(y_test, y_pred)
 
-print("\nDesempenho do Modelo QML:")
+print("\nDesempenho do Modelo QML com ruído:")
 print(f"Acurácia: {accuracy:.2f}")
 print(f"Precisão: {precision:.2f}")
 print(f"Recall: {recall:.2f}")
