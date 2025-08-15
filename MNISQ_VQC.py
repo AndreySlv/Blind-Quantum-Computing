@@ -46,7 +46,20 @@ simulator = AerSimulator(
 )
 
 def enviar_circuito_por_epoca(circuito, epoch, num_qubits, circuit_depth):
-    print(f"[Epoch {epoch+1}] Circuito com {num_qubits} qubits e profundidade {circuit_depth}")
+    print(f"[Epoch {epoch+1}] Enviando circuito para a rede...")
+    try:
+        rede.application_layer.run_app(
+            "BFK_BQC",
+            alice_id=6,
+            bob_id=0,
+            num_qubits=num_qubits,
+            scenario=2,
+            circuit_depth=circuit_depth,
+            circuit=circuito
+        )
+        print(f"[Epoch {epoch+1}] Envio concluído.")
+    except Exception as e:
+        print(f"[Epoch {epoch+1}] Erro ao enviar circuito: {str(e)}")
 
 path = "base_test_mnist_784_f90/qasm/"
 file_list = sorted(os.listdir(path))[:20]  

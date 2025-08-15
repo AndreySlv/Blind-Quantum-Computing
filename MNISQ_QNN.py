@@ -41,7 +41,7 @@ def enviar_circuito_por_epoca(circuito, epoch, num_qubits, circuit_depth):
     print(f"[Epoch {epoch+1}] Enviando circuito para a rede...")
     try:
         rede.application_layer.run_app(
-            "AC_BQC",
+            "BFK_BQC",
             alice_id=6,
             bob_id=0,
             num_qubits=num_qubits,
