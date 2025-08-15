@@ -79,7 +79,7 @@ qnn = EstimatorQNN(
     circuit=qc_template,
     input_params=feature_map.parameters,
     weight_params=ansatz.parameters,
-    estimator=estimator  # Usando o estimator com ruído
+    estimator=estimator 
 )
 
 model = TorchConnector(qnn)
@@ -90,9 +90,6 @@ loss_func = torch.nn.BCELoss()
 # Conversão para tensores
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
-
-print("\nIniciando treinamento com backend ruidoso...")
-print(f"Configuração de ruído: 1-qubit error={error_1q.probabilities}, 2-qubit error={error_2q.probabilities}")
 
 for epoch in range(5):
     model.train()
@@ -118,7 +115,7 @@ for epoch in range(5):
     circuit_depth = quantum_circuit.depth()
 
     rede.application_layer.run_app(
-        "AC_BQC",
+        "BFK_BQC",
         alice_id=6,
         bob_id=0,
         num_qubits=num_qubits,
